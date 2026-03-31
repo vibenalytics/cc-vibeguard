@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { execFileSync } = require("child_process");
-const path = require("path");
+const { chmodSync } = require("fs");
 
 const PLATFORMS = {
   "darwin-arm64": "@vibenalytics/security-darwin-arm64",
@@ -34,6 +34,7 @@ try {
 }
 
 try {
+  chmodSync(binPath, 0o755);
   execFileSync(binPath, process.argv.slice(2), { stdio: "inherit" });
 } catch (e) {
   if (e.status !== undefined) {
