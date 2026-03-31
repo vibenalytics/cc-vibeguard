@@ -67,20 +67,18 @@ fn main() -> Result<()> {
     let analysis = security::analyze(parsed, include_subagents);
 
     let json = serde_json::to_string_pretty(&analysis)?;
-    let json_out = cli.json_out.clone().unwrap_or_else(default_json_out);
 
-    if let Some(parent) = json_out.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    fs::write(&json_out, &json)?;
-    if !cli.quiet {
-        eprintln!("[4/4] wrote JSON report to {}", json_out.display());
-    }
-
-    if cli.json {
-        if !cli.quiet {
-            eprintln!("[4/4] printing JSON report to stdout");
+    if let Some(json_out) = &cli.json_out {
+        if let Some(parent) = json_out.parent() {
+            fs::create_dir_all(parent)?;
         }
+        fs::write(json_out, &json)?;
+        if !cli.quiet {
+            eprintln!("[4/4] wrote JSON report to {}", json_out.display());
+        }
+    }
+
+    if cli.json || cli.json_out.is_none() {
         println!("{json}");
     }
 
