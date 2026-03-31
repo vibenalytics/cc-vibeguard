@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            platform: darwin-arm64
+            npm_pkg: security-darwin-arm64
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            platform: darwin-x64
+            npm_pkg: security-darwin-x64
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            platform: linux-x64
+            npm_pkg: security-linux-x64
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            platform: linux-arm64
+            npm_pkg: security-linux-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross-compilation tools (Linux ARM)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i.bak "s/^version = \".*\"/version = \"${VERSION}\"/" cli/Cargo.toml
+          rm -f cli/Cargo.toml.bak
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }} --manifest-path cli/Cargo.toml
+
+      - name: Prepare npm platform package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          PKG_DIR="npm/${{ matrix.npm_pkg }}"
+          cp target/${{ matrix.target }}/release/vibenalytics-security "$PKG_DIR/vibenalytics-security"
+          chmod +x "$PKG_DIR/vibenalytics-security"
+          # Set version in package.json
+          cd "$PKG_DIR"
+          sed -i.bak "s/\"version\": \"0.0.0\"/\"version\": \"${VERSION}\"/" package.json
+          rm -f package.json.bak
+
+      - name: Upload npm package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-${{ matrix.npm_pkg }}
+          path: npm/${{ matrix.npm_pkg }}/
+
+  publish:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Download all platform artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish platform packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          for pkg in security-darwin-arm64 security-darwin-x64 security-linux-x64 security-linux-arm64; do
+            DIR="artifacts/npm-${pkg}"
+            echo "Publishing @vibenalytics/${pkg}@${VERSION}"
+            cd "$DIR"
+            chmod +x vibenalytics-security
+            npm publish --access public
+            cd "$GITHUB_WORKSPACE"
+          done
+
+      - name: Publish main package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cd npm/vibenalytics-security
+          # Set version in main package and all optionalDependencies
+          sed -i "s/\"version\": \"0.0.0\"/\"version\": \"${VERSION}\"/" package.json
+          sed -i "s/\"0.0.0\"/\"${VERSION}\"/g" package.json
+          npm publish --access public

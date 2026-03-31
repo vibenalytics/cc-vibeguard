@@ -1,0 +1,13 @@
+{
+  "name": "@vibenalytics/security-darwin-x64",
+  "version": "0.0.0",
+  "description": "vibenalytics-security binary for macOS x64",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vibenalytics/vibenalytics-security"
+  },
+  "os": ["darwin"],
+  "cpu": ["x64"],
+  "files": ["vibenalytics-security"]
+}

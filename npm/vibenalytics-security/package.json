@@ -1,0 +1,22 @@
+{
+  "name": "@vibenalytics/security",
+  "version": "0.0.0",
+  "description": "Security analysis for Claude Code transcripts",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vibenalytics/vibenalytics-security"
+  },
+  "homepage": "https://vibenalytics.dev/security",
+  "keywords": ["claude-code", "security", "analytics", "cli"],
+  "bin": {
+    "vibenalytics-security": "bin/run.js"
+  },
+  "files": ["bin/run.js"],
+  "optionalDependencies": {
+    "@vibenalytics/security-darwin-arm64": "0.0.0",
+    "@vibenalytics/security-darwin-x64": "0.0.0",
+    "@vibenalytics/security-linux-x64": "0.0.0",
+    "@vibenalytics/security-linux-arm64": "0.0.0"
+  }
+}
