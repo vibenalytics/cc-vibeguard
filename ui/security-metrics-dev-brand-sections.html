@@ -357,10 +357,59 @@
       font-weight: 700;
     }
 
-    .download-card-btn:hover~.card-preview {
+    .btn-wrap:hover~.card-preview {
       opacity: 1;
       transform: translateY(-29%) scale(0.8) rotate(-8deg);
     }
+
+    .btn-wrap {
+      position: relative;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .share-icons {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 10px;
+      display: flex;
+      gap: 14px;
+      pointer-events: none;
+    }
+
+    .btn-wrap:hover .share-icons {
+      pointer-events: auto;
+    }
+
+    .share-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      opacity: 0;
+      transform: scale(0.3) translateY(0) rotate(0deg);
+      transform-origin: center top;
+      transition: opacity 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .btn-wrap:hover .share-icon { opacity: 0.55; }
+
+    .btn-wrap:hover .share-icon:nth-child(1) { transform: scale(1) translateY(2px) rotate(-8deg); transition-delay: 0s; }
+    .btn-wrap:hover .share-icon:nth-child(2) { transform: scale(1) translateY(-1px) rotate(-3deg); transition-delay: 0.04s; }
+    .btn-wrap:hover .share-icon:nth-child(3) { transform: scale(1) translateY(-1px) rotate(3deg); transition-delay: 0.08s; }
+    .btn-wrap:hover .share-icon:nth-child(4) { transform: scale(1) translateY(2px) rotate(8deg); transition-delay: 0.12s; }
+
+    .share-icon:hover {
+      opacity: 1 !important;
+      transform: scale(1.15) translateY(-3px) rotate(0deg) !important;
+    }
+
+    .share-icon svg { width: 16px; height: 16px; fill: currentColor; }
 
     /* ── Persona card (hidden, download only) ── */
     .persona-card {
@@ -723,6 +772,53 @@
       width: 100%;
     }
 
+    .expandable { max-height: none; overflow: hidden; position: relative; }
+    .expandable.collapsed { max-height: var(--collapsed-h, 280px); }
+    .expandable.collapsed::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 60px;
+      background: linear-gradient(transparent, #1C1C20);
+      pointer-events: none;
+    }
+    .show-more-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      background: none;
+      border: 1px solid var(--line);
+      color: var(--text-sec);
+      font: 500 12px/1 "JetBrains Mono", monospace;
+      padding: 7px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .show-more-btn:hover { color: var(--text); border-color: var(--text-muted); }
+    .show-more-btn svg { width: 12px; height: 12px; transition: transform 0.2s; }
+    .show-more-btn.expanded svg { transform: rotate(180deg); }
+
+    .stat-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 13px;
+    }
+    .stat-line:last-child { border-bottom: none; }
+    .stat-line-label { color: var(--text-sec); }
+    .stat-line-val { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 14px; }
+
+    .chart-with-sidebar {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
     .legend {
       display: flex;
       flex-wrap: wrap;
@@ -1025,6 +1121,40 @@
     const dataUrl = params.get('data') || './report.json';
 
     function esc(str) { return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function countItems(el) {
+      const svg = el.querySelector('svg');
+      if (svg) {
+        const rects = svg.querySelectorAll('g > rect[fill]:not([fill*="rgba"])');
+        const texts = svg.querySelectorAll('text[text-anchor="end"]');
+        return texts.length || Math.max(0, Math.floor(rects.length / 2));
+      }
+      const rows = el.querySelectorAll('.detail, tr:not(:first-child)');
+      if (rows.length) return rows.length;
+      return el.children.length;
+    }
+    function initExpandButtons() {
+      document.querySelectorAll('.show-more-btn').forEach(btn => {
+        const target = btn.previousElementSibling;
+        const total = countItems(target);
+        const collapsed = target.classList.contains('collapsed');
+        const visibleEstimate = 5;
+        const remaining = Math.max(0, total - visibleEstimate);
+        if (total <= visibleEstimate || !collapsed) {
+          target.classList.remove('collapsed');
+          btn.style.display = 'none';
+          return;
+        }
+        btn.querySelector('span').textContent = `Show all (${remaining} more)`;
+      });
+    }
+    function toggleExpand(btn) {
+      const target = btn.previousElementSibling;
+      const total = countItems(target);
+      const isCollapsed = target.classList.toggle('collapsed');
+      btn.classList.toggle('expanded', !isCollapsed);
+      const remaining = Math.max(0, total - 5);
+      btn.querySelector('span').textContent = isCollapsed ? `Show all (${remaining} more)` : 'Show less';
+    }
     function mini(label, value, color) { return `<div class="mini"><strong style="color:${color}">${value}</strong><span>${label}</span></div>`; }
     function riskBadge(p) { return p === 'P0' ? 'badge-red' : p === 'P1' ? 'badge-orange' : 'badge-blue'; }
     function formatTopTerms(items, tone, limit = 3) {
@@ -1308,9 +1438,55 @@
           cursor += segH;
         });
       });
+      // Average bypass % line
+      if (data.length > 1) {
+        const avgBypass = d3.mean(data, d => d.bypass);
+        const avgY = y(avgBypass);
+        g.append('line').attr('x1', 0).attr('x2', innerW).attr('y1', avgY).attr('y2', avgY)
+          .attr('stroke', C.text).attr('stroke-width', 1).attr('stroke-dasharray', '4,4').attr('opacity', 0.4);
+        g.append('text').attr('x', innerW + 4).attr('y', avgY).attr('dy', '.35em')
+          .attr('font-size', 9).attr('font-family', '"JetBrains Mono", monospace').attr('fill', C.text).attr('opacity', 0.5)
+          .text(`avg ${Math.round(avgBypass)}%`);
+      }
     }
 
     /* ── Render ── */
+    function agentTrendChart(id, rows) {
+      const data = rows.slice().sort((a, b) => a.date.localeCompare(b.date));
+      if (!data.length) { d3.select(id).html('<div style="color:var(--text-muted);font-size:13px;padding:20px 0">No agent activity recorded.</div>'); return; }
+      const width = getChartWidth(id, 720), height = 220;
+      const margin = { top: 18, right: 50, bottom: 36, left: 34 };
+      const innerW = width - margin.left - margin.right, innerH = height - margin.top - margin.bottom;
+      const x = d3.scaleBand().domain(data.map(d => d.date)).range([0, innerW]).padding(0.22);
+      const maxVal = d3.max(data, d => d.spawned) || 1;
+      const y = d3.scaleLinear().domain([0, maxVal]).nice().range([innerH, 0]);
+      const tickEvery = Math.max(1, Math.ceil(data.length / 8));
+      const tickDates = data.filter((_, i) => i % tickEvery === 0).map(d => d.date);
+      const svg = d3.select(id).html('').append('svg').attr('viewBox', `0 0 ${width} ${height}`);
+      const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+      g.append('g').call(d3.axisLeft(y).ticks(4)).call(a => a.selectAll('text').attr('fill', C.muted).attr('font-size', 10)).call(a => a.selectAll('path,line').attr('stroke', C.line));
+      g.append('g').attr('transform', `translate(0,${innerH})`).call(d3.axisBottom(x).tickValues(tickDates).tickFormat(d => d.slice(5))).call(a => a.selectAll('text').attr('fill', C.muted).attr('font-size', 10)).call(a => a.selectAll('path,line').attr('stroke', C.line));
+      data.forEach(d => {
+        const xPos = x(d.date), barW = x.bandwidth();
+        const supervised = d.spawned - d.in_bypass;
+        // Bypass portion (bottom)
+        if (d.in_bypass > 0) {
+          g.append('rect').attr('x', xPos).attr('y', y(d.in_bypass)).attr('width', barW).attr('height', innerH - y(d.in_bypass)).attr('fill', C.red).attr('rx', 3);
+        }
+        // Supervised portion (stacked on top)
+        if (supervised > 0) {
+          g.append('rect').attr('x', xPos).attr('y', y(d.spawned)).attr('width', barW).attr('height', innerH - y(supervised)).attr('fill', C.purple).attr('rx', 3);
+        }
+      });
+      // Average line
+      if (data.length > 1) {
+        const avg = d3.mean(data, d => d.spawned);
+        const avgY = y(avg);
+        g.append('line').attr('x1', 0).attr('x2', innerW).attr('y1', avgY).attr('y2', avgY).attr('stroke', C.text).attr('stroke-width', 1).attr('stroke-dasharray', '4,4').attr('opacity', 0.4);
+        g.append('text').attr('x', innerW + 4).attr('y', avgY).attr('dy', '.35em').attr('font-size', 9).attr('font-family', '"JetBrains Mono", monospace').attr('fill', C.text).attr('opacity', 0.5).text(`avg ${Math.round(avg)}`);
+      }
+    }
+
     function render(data) {
       const p = derivePersona(data);
       const app = document.getElementById('app');
@@ -1338,7 +1514,7 @@
           { label: 'Agents', score: data.scores.agent_oversight },
         ].map(s => `<div class="hero-score-item"><div class="hero-score-val" style="color:${scoreColor(s.score)}">${s.score}%</div><div class="hero-score-label">${s.label}</div></div>`).join('')}
       </div>
-      <div class="hero-download"><button class="download-card-btn" onclick="downloadCard()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download card</button><button class="review-link" onclick="document.querySelector('.report-section').scrollIntoView({behavior:'smooth'})"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>review full report</button><div class="card-preview" data-tone="${p.tone}"><div class="cp-bar" data-tone="${p.tone}"></div><div class="cp-kicker">Claude Code Security Scan</div><div class="cp-title" data-tone="${p.tone}">${p.title}</div><div class="cp-score" style="color:${scoreColor(data.scores.overall)}">${data.scores.overall}<span style="font-size:6px;color:var(--text-muted)"> /100</span></div></div></div>
+      <div class="hero-download"><div class="btn-wrap"><button class="download-card-btn" onclick="downloadCard()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download card</button><div class="share-icons"><a class="share-icon" title="LinkedIn" href="https://www.linkedin.com/sharing/share-offsite/?url=https://vibenalytics.dev/security" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a><a class="share-icon" title="X" href="https://x.com/intent/tweet?text=My%20Claude%20Code%20security%20score&url=https://vibenalytics.dev/security" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a class="share-icon" title="Reddit" href="https://www.reddit.com/submit?url=https://vibenalytics.dev/security&title=My%20Claude%20Code%20Security%20Score" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 01-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 01.042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 014.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 01.14-.197.35.35 0 01.238-.042l2.906.617a1.214 1.214 0 011.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 00-.231.094.33.33 0 000 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 000-.462.342.342 0 00-.462 0c-.545.533-1.684.73-2.512.73-.828 0-1.953-.197-2.498-.73a.327.327 0 00-.219-.095z"/></svg></a><a class="share-icon" title="GitHub" href="https://github.com/vibenalytics/vibenalytics-security" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a></div></div><button class="review-link" onclick="document.querySelector('.report-section').scrollIntoView({behavior:'smooth'})"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>review full report</button><div class="card-preview" data-tone="${p.tone}"><div class="cp-bar" data-tone="${p.tone}"></div><div class="cp-kicker">Claude Code Security Scan</div><div class="cp-title" data-tone="${p.tone}">${p.title}</div><div class="cp-score" style="color:${scoreColor(data.scores.overall)}">${data.scores.overall}<span style="font-size:6px;color:var(--text-muted)"> /100</span></div></div></div>
     </div>
   </div>
 
@@ -1378,16 +1554,20 @@
         <div class="subgrid-2">
           <section class="card accent-card">
             <div class="card-header"><div class="card-title">Secret types detected</div><div class="card-note">Counts by secret type found during the scan.</div></div>
-            <div class="chart" id="secret-types"></div>
+            <div class="chart expandable collapsed" id="secret-types"></div>
+            <button class="show-more-btn" onclick="toggleExpand(this)"><span>Show all</span></button>
           </section>
           <section class="card">
             <div class="card-header"><div class="card-title">Most frequently exposed values</div><div class="card-note">Specific values that appeared repeatedly across the dataset.</div></div>
-            <div class="detail-list" id="most-exposed"></div>
+            <div class="detail-list expandable collapsed" id="most-exposed"></div>
+            <button class="show-more-btn" onclick="toggleExpand(this)"><span>Show all</span></button>
           </section>
         </div>
         <section class="card">
           <div class="card-header"><div class="card-title">Exposure by project</div><div class="card-note">Which projects accounted for the most secret-related activity.</div></div>
-          <div class="chart" id="project-exposure"></div>
+          <div class="chart expandable collapsed" id="project-exposure"></div>
+          <button class="show-more-btn" onclick="toggleExpand(this)"><span>Show all</span></button>
+          <div class="legend" style="justify-content:center"><span><i style="background:var(--blue)"></i>Sensitive file reads (.env, credentials)</span><span><i style="background:var(--red)"></i>Secret values in context (API keys, tokens)</span><span><i style="background:var(--accent)"></i>Writes to secret files</span></div>
         </section>
       </div>
     </section>
@@ -1403,11 +1583,13 @@
         <div class="subgrid-2">
           <section class="card accent-card">
             <div class="card-header"><div class="card-title">Remote activity by host</div><div class="card-note">SSH command volume for each host.</div></div>
-            <div class="chart" id="remote-hosts"></div>
+            <div class="chart expandable collapsed" id="remote-hosts"></div>
+            <button class="show-more-btn" onclick="toggleExpand(this)"><span>Show all</span></button>
           </section>
           <section class="card">
             <div class="card-header"><div class="card-title">Remote activity by day</div><div class="card-note">Daily SSH activity with the top host and a short activity summary.</div></div>
-            <table><thead><tr><th>Date</th><th>Commands</th><th>Host</th><th>Activity</th></tr></thead><tbody id="remote-timeline"></tbody></table>
+            <div class="expandable collapsed"><table><thead><tr><th>Date</th><th>Commands</th><th>Host</th><th>Activity</th></tr></thead><tbody id="remote-timeline"></tbody></table></div>
+            <button class="show-more-btn" onclick="toggleExpand(this)"><span>Show all</span></button>
           </section>
         </div>
       </div>
@@ -1421,14 +1603,11 @@
       </div>
       <div class="section-body">
         <div class="mini-stats" id="command-stats"></div>
-        <div class="subgrid-3">
-          <section class="card accent-card">
-            <div class="card-header"><div class="card-title">Command severity</div><div class="card-note">Counts of commands by severity level.</div></div>
-            <div class="chart" id="severity-distribution"></div>
-          </section>
+        <div class="subgrid-2">
           <section class="card">
             <div class="card-header"><div class="card-title">Command categories</div><div class="card-note">Command types that appeared most often.</div></div>
-            <div class="chart" id="command-categories"></div>
+            <div class="chart expandable collapsed" id="command-categories"></div>
+            <button class="show-more-btn" onclick="toggleExpand(this)"><span>Show all</span></button>
           </section>
           <section class="card">
             <div class="card-header"><div class="card-title">Sensitive Git actions</div><div class="card-note">Counts for push to main, force push, reset --hard, and --no-verify.</div></div>
@@ -1461,20 +1640,25 @@
     <section class="report-section" style="--section-color:var(--purple)">
       <div class="section-top">
         <div class="section-label"><span class="section-index">05</span> Metric Area</div>
-        <div class="section-heading">Agent oversight</div>
-        <div class="section-copy">Agent usage, human intervention, and which tools were rejected most often.</div>
+        <div class="section-heading">Agents</div>
+        <div class="section-copy">Spawned agents, supervision levels, and which tools were rejected.</div>
       </div>
       <div class="section-body">
-        <div class="subgrid-2">
-          <section class="card">
-            <div class="card-header"><div class="card-title">Agent oversight summary</div><div class="card-note">Spawned agents, bypass usage, denials, and override rate.</div></div>
-            <div class="mini-stats" id="oversight-stats"></div>
-          </section>
-          <section class="card accent-card">
-            <div class="card-header"><div class="card-title">Most rejected tools</div><div class="card-note">Tool categories that triggered rejection most often.</div></div>
-            <div class="chart" id="rejected-tools"></div>
-          </section>
-        </div>
+        <section class="card">
+          <div class="card-header"><div class="card-title">Agent activity over time</div><div class="card-note">Daily agent spawns and how many ran in bypass mode.</div></div>
+          <div class="chart-with-sidebar">
+            <div id="oversight-stats"></div>
+            <div>
+              <div class="chart" id="agent-trend"></div>
+              <div class="legend" style="justify-content:center"><span><i style="background:var(--purple)"></i>Supervised agents</span><span><i style="background:var(--red)"></i>Bypass mode agents</span></div>
+            </div>
+          </div>
+        </section>
+        <section class="card accent-card" style="margin-top:16px">
+          <div class="card-header"><div class="card-title">Most rejected tools</div><div class="card-note">Tool categories that triggered rejection most often.</div></div>
+          <div class="chart expandable collapsed" id="rejected-tools"></div>
+          <button class="show-more-btn" onclick="toggleExpand(this)"><span>Show all</span></button>
+        </section>
       </div>
     </section>
 
@@ -1492,7 +1676,8 @@
           </section>
           <section class="card">
             <div class="card-header"><div class="card-title">Sentiment by project</div><div class="card-note">Positive and negative prompt counts for each project.</div></div>
-            <table><thead><tr><th>Project</th><th>Positive</th><th>Negative</th><th>Total prompts</th></tr></thead><tbody id="sentiment-projects"></tbody></table>
+            <div class="expandable collapsed"><table><thead><tr><th>Project</th><th>Positive</th><th>Negative</th><th>Total prompts</th></tr></thead><tbody id="sentiment-projects"></tbody></table></div>
+            <button class="show-more-btn" onclick="toggleExpand(this)"><span>Show all</span></button>
           </section>
         </div>
       </div>
@@ -1567,12 +1752,17 @@
         mini('Low', data.destructive_commands.low, C.green)
       ].join('');
 
+      function statLine(label, value, color) { return `<div class="stat-line"><span class="stat-line-label">${label}</span><span class="stat-line-val" style="color:${color}">${value}</span></div>`; }
+      const tp = data.autonomous_agents.from_top_project;
+      const supervised = data.autonomous_agents.agents_spawned - data.autonomous_agents.in_bypass_mode;
       document.getElementById('oversight-stats').innerHTML = [
-        mini('Agents spawned', data.autonomous_agents.agents_spawned, C.accent),
-        mini('Bypass mode', data.autonomous_agents.in_bypass_mode, C.red),
-        mini('Denials', data.human_overrides.denials, C.green),
-        mini('Override rate', `${Math.round(data.human_overrides.override_rate)}%`, C.blue)
+        statLine('Total spawned', data.autonomous_agents.agents_spawned, C.accent),
+        statLine('Supervised', supervised, C.purple),
+        statLine('In bypass mode', data.autonomous_agents.in_bypass_mode, data.autonomous_agents.in_bypass_mode > 0 ? C.red : C.green),
+        statLine('Rejections', data.autonomous_agents.rejections, C.orange),
+        statLine('Bypass rate', data.autonomous_agents.agents_spawned > 0 ? Math.round(data.autonomous_agents.in_bypass_mode / data.autonomous_agents.agents_spawned * 100) + '%' : '0%', data.autonomous_agents.in_bypass_mode > 0 ? C.red : C.green)
       ].join('');
+      agentTrendChart('#agent-trend', arr(data.autonomous_agents.agents_by_day));
 
       const sent = data.user_sentiment;
       const ratio = sent.total_negative ? (sent.total_positive / sent.total_negative).toFixed(sent.total_positive / sent.total_negative >= 3 ? 0 : 1) : sent.total_positive;
@@ -1584,20 +1774,20 @@
       ].map(([name, value, badge, sub]) => `<div class="detail"><div class="name${sub ? ' with-sub' : ''}">${name}${sub ? `<div class="detail-sub">${sub}</div>` : ''}</div><div class="num">${value}</div><div class="meta"><span class="badge ${badge}">${name}</span></div></div>`).join('');
 
       // Charts
-      hBarChart('#secret-types', arr(data.secret_exposure.secret_types).map((d, i) => ({ label: d.label, value: d.count, color: i < 2 ? C.red : i < 5 ? C.orange : C.blue })), { left: 180, limit: 10, width: 760 });
+      hBarChart('#secret-types', arr(data.secret_exposure.secret_types).map(d => ({ label: d.label, value: d.count, color: d.count >= 100 ? C.red : d.count >= 30 ? C.orange : C.blue })));
       stackedProjectChart('#project-exposure', arr(data.secret_exposure.exposure_by_project));
-      hBarChart('#remote-hosts', arr(data.ssh_remote_access.hosts_accessed).map((d, i) => ({ label: d.label, value: d.count, color: i < 2 ? C.accent : i < 5 ? C.orange : C.blue })), { left: 170, limit: 8, width: 700 });
-      severityColumns('#severity-distribution', arr(data.destructive_commands.severity_distribution));
-      hBarChart('#command-categories', arr(data.destructive_commands.by_category).map((d, i) => ({ label: d.label, value: d.count, color: i === 0 ? C.red : i < 4 ? C.orange : C.blue })), { left: 138, limit: 8, width: 420, rowHeight: 26 });
-      hBarChart('#rejected-tools', arr(data.human_overrides.most_rejected_tools).map((d, i) => ({ label: d.label, value: d.count, color: i < 2 ? C.green : C.blue })), { left: 120, limit: 8, width: 640 });
+      hBarChart('#remote-hosts', arr(data.ssh_remote_access.hosts_accessed).map(d => ({ label: d.label, value: d.count, color: d.count >= 50 ? C.red : d.count >= 15 ? C.orange : C.blue })));
+
+      hBarChart('#command-categories', arr(data.destructive_commands.by_category).map(d => ({ label: d.label, value: d.count, color: d.count >= 20 ? C.red : d.count >= 5 ? C.orange : C.blue })));
+      hBarChart('#rejected-tools', arr(data.human_overrides.most_rejected_tools).map(d => ({ label: d.label, value: d.count, color: d.count >= 20 ? C.orange : C.blue })));
 
       // Git safety
       const git = data.destructive_commands.git_safety;
       document.getElementById('git-safety').innerHTML = [
-        ['Push to main', git.push_to_main, 'badge-orange', 'seen'],
-        ['Force push', git.force_push, 'badge-blue', git.force_push > 0 ? 'seen' : 'not seen'],
-        ['reset --hard', git.reset_hard, 'badge-blue', git.reset_hard > 0 ? 'seen' : 'not seen'],
-        ['--no-verify', git.no_verify, 'badge-green', git.no_verify > 0 ? 'seen' : 'not seen']
+        ['Push to main', git.push_to_main, git.push_to_main > 0 ? 'badge-red' : 'badge-green', git.push_to_main > 0 ? 'seen' : 'clean'],
+        ['Force push', git.force_push, git.force_push > 0 ? 'badge-red' : 'badge-green', git.force_push > 0 ? 'seen' : 'clean'],
+        ['reset --hard', git.reset_hard, git.reset_hard > 0 ? 'badge-orange' : 'badge-green', git.reset_hard > 0 ? 'seen' : 'clean'],
+        ['--no-verify', git.no_verify, git.no_verify > 0 ? 'badge-orange' : 'badge-green', git.no_verify > 0 ? 'seen' : 'clean']
       ].map(([name, value, badge, label]) => `<div class="detail"><div class="name">${name}</div><div class="num">${value}</div><div class="meta"><span class="badge ${badge}">${label}</span></div></div>`).join('');
 
       // Mode share
@@ -1611,11 +1801,12 @@
       modeTrendChart('#mode-trends', arr(data.permission_discipline.modes_by_day));
 
       // Tables
-      document.getElementById('most-exposed').innerHTML = arr(data.secret_exposure.most_exposed).slice(0, 8).map(item => `<div class="detail"><div class="name mono">${esc(item.secret)}</div><div class="num">${item.hits}</div><div class="meta">${item.projects} projects</div></div>`).join('');
+      document.getElementById('most-exposed').innerHTML = arr(data.secret_exposure.most_exposed).map(item => `<div class="detail"><div class="name mono">${esc(item.secret)}</div><div class="num">${item.hits}</div><div class="meta">${item.projects} projects</div></div>`).join('');
       document.getElementById('remote-timeline').innerHTML = arr(data.ssh_remote_access.timeline).map(item => `<tr><td class="mono">${item.date}</td><td class="mono">${item.commands}</td><td class="mono">${esc(item.top_host)}</td><td>${esc(item.activity_summary)}</td></tr>`).join('');
       document.getElementById('sentiment-projects').innerHTML = arr(sent.by_project).map(item => `<tr><td class="mono">${esc(item.project)}</td><td class="mono" style="color:${C.green}">${item.positive}</td><td class="mono" style="color:${C.red}">${item.negative}</td><td class="mono">${item.total_prompts}</td></tr>`).join('');
       document.getElementById('priority-risks-list').innerHTML = buildPriorityRisks(data).map(item => `<div class="risk-item"><div class="risk-head"><span class="badge ${riskBadge(item.priority)}">${item.priority}</span><div class="risk-title">${esc(item.title)}</div></div><div class="risk-desc">${esc(item.description)}</div></div>`).join('');
       document.getElementById('working-well').innerHTML = buildPositiveSignals(data).map(item => `<div class="good-item">${esc(item)}</div>`).join('');
+      initExpandButtons();
     }
 
     fetch(dataUrl)

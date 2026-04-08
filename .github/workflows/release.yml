@@ -60,9 +60,8 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           PKG_DIR="npm/${{ matrix.npm_pkg }}"
-          cp cli/target/${{ matrix.target }}/release/vibenalytics-security "$PKG_DIR/vibenalytics-security"
-          chmod +x "$PKG_DIR/vibenalytics-security"
-          # Set version in package.json
+          cp cli/target/${{ matrix.target }}/release/cc-vibeguard "$PKG_DIR/cc-vibeguard"
+          chmod +x "$PKG_DIR/cc-vibeguard"
           cd "$PKG_DIR"
           sed -i.bak "s/\"version\": \"0.0.0\"/\"version\": \"${VERSION}\"/" package.json
           rm -f package.json.bak
@@ -97,9 +96,9 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           for pkg in security-darwin-arm64 security-darwin-x64 security-linux-x64 security-linux-arm64; do
             DIR="artifacts/npm-${pkg}"
-            echo "Publishing @vibenalytics/${pkg}@${VERSION}"
+            echo "Publishing cc-vibeguard-${pkg#security-}@${VERSION}"
             cd "$DIR"
-            chmod +x vibenalytics-security
+            chmod +x cc-vibeguard
             npm publish --access public
             cd "$GITHUB_WORKSPACE"
           done
@@ -109,8 +108,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          cd npm/vibenalytics-security
-          # Set version in main package and all optionalDependencies
+          cd npm/cc-vibeguard
           sed -i "s/\"version\": \"0.0.0\"/\"version\": \"${VERSION}\"/" package.json
           sed -i "s/\"0.0.0\"/\"${VERSION}\"/g" package.json
           npm publish --access public

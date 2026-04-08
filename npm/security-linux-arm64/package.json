@@ -1,13 +1,13 @@
 {
-  "name": "@vibenalytics/security-linux-arm64",
+  "name": "cc-vibeguard-linux-arm64",
   "version": "0.0.0",
-  "description": "vibenalytics-security binary for Linux ARM64",
+  "description": "cc-vibeguard binary for Linux ARM64",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vibenalytics/vibenalytics-security"
+    "url": "https://github.com/vibenalytics/cc-vibeguard"
   },
   "os": ["linux"],
   "cpu": ["arm64"],
-  "files": ["vibenalytics-security"]
+  "files": ["cc-vibeguard"]
 }

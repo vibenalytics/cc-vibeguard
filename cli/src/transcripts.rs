@@ -55,6 +55,7 @@ pub struct ParsedSession {
     pub interrupts: u32,
     pub api_errors: u32,
     pub compactions: u32,
+    pub models: HashMap<String, u32>,
 }
 
 fn collect_jsonl_recursive(dir: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
@@ -203,6 +204,7 @@ fn parse_session(file: &SessionFile) -> Result<Option<ParsedSession>> {
     let mut interrupts = 0u32;
     let mut api_errors = 0u32;
     let mut compactions = 0u32;
+    let mut models: HashMap<String, u32> = HashMap::new();
 
     for line in reader.lines() {
         let line = line?;
@@ -238,8 +240,12 @@ fn parse_session(file: &SessionFile) -> Result<Option<ParsedSession>> {
                 }
             }
             "assistant" => {
-                if evt.pointer("/message/model").and_then(|v| v.as_str()) == Some("<synthetic>") {
+                let model_str = evt.pointer("/message/model").and_then(|v| v.as_str()).unwrap_or("");
+                if model_str == "<synthetic>" {
                     continue;
+                }
+                if !model_str.is_empty() {
+                    *models.entry(model_str.to_string()).or_insert(0) += 1;
                 }
                 if let Some(content) = evt.pointer("/message/content").and_then(|v| v.as_array()) {
                     for block in content {
@@ -353,6 +359,7 @@ fn parse_session(file: &SessionFile) -> Result<Option<ParsedSession>> {
         interrupts,
         api_errors,
         compactions,
+        models,
     }))
 }
 

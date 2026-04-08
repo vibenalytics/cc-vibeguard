@@ -4,10 +4,10 @@ const { execFileSync } = require("child_process");
 const { chmodSync } = require("fs");
 
 const PLATFORMS = {
-  "darwin-arm64": "@vibenalytics/security-darwin-arm64",
-  "darwin-x64": "@vibenalytics/security-darwin-x64",
-  "linux-x64": "@vibenalytics/security-linux-x64",
-  "linux-arm64": "@vibenalytics/security-linux-arm64",
+  "darwin-arm64": "cc-vibeguard-darwin-arm64",
+  "darwin-x64": "cc-vibeguard-darwin-x64",
+  "linux-x64": "cc-vibeguard-linux-x64",
+  "linux-arm64": "cc-vibeguard-linux-arm64",
 };
 
 const platformKey = `${process.platform}-${process.arch}`;
@@ -23,12 +23,12 @@ if (!pkg) {
 
 let binPath;
 try {
-  binPath = require.resolve(`${pkg}/vibenalytics-security`);
+  binPath = require.resolve(`${pkg}/cc-vibeguard`);
 } catch {
   console.error(
     `Could not find binary package ${pkg}.\n` +
     `This usually means the optional dependency was not installed.\n` +
-    `Try: npm install --force @vibenalytics/security`
+    `Try: npm install --force cc-vibeguard`
   );
   process.exit(1);
 }

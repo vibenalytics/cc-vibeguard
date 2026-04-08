@@ -1,8 +1,8 @@
 [package]
-name = "vibenalytics-security"
+name = "cc-vibeguard"
 version = "0.1.0"
 edition = "2021"
-description = "Security-focused transcript analysis for Claude Code"
+description = "Security audit & risk dashboard for Claude Code sessions"
 license = "MIT"
 
 [dependencies]

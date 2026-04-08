@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0d1117">
+  <title>Vibecoder Security Report</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --elevated: #21262d;
+      --border-subtle: #21262d;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-sec: #8b949e;
+      --text-muted: #484f58;
+      --accent: #58a6ff;
+      --red: #f85149;
+      --orange: #d29922;
+      --green: #3fb950;
+      --blue: #58a6ff;
+      --purple: #bc8cff;
+      --coral: #f78166;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .header {
+      padding: 0 0 24px;
+    }
+
+    .header-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .gauges-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 24px;
+      padding: 28px 0 16px;
+      flex-wrap: wrap;
+    }
+
+    .score-legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 32px;
+    }
+
+    .score-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .score-legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .section-num {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .section-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 20px;
+    }
+
+    .chart-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chart-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+    }
+
+    .stat-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sec);
+      margin-bottom: 2px;
+    }
+
+    .label-with-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .info-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-sec);
+      background: var(--elevated);
+      cursor: help;
+      line-height: 1;
+      vertical-align: middle;
+      flex: 0 0 auto;
+    }
+
+    .chart-title .info-icon,
+    .stat-label .info-icon {
+      transform: translateY(-0.5px);
+    }
+
+    .stat-detail {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-align: left;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .data-table td {
+      font-size: 13px;
+      color: var(--text-sec);
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .data-table td:first-child {
+      color: var(--text);
+    }
+
+    .data-table tr:hover td {
+      background: rgba(56, 139, 253, 0.04);
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .badge-p0 {
+      background: rgba(248, 81, 73, 0.15);
+      color: var(--red);
+      border: 1px solid rgba(248, 81, 73, 0.25);
+    }
+
+    .badge-p1 {
+      background: rgba(210, 153, 34, 0.15);
+      color: var(--orange);
+      border: 1px solid rgba(210, 153, 34, 0.25);
+    }
+
+    .badge-p2 {
+      background: rgba(88, 166, 255, 0.12);
+      color: var(--blue);
+      border: 1px solid rgba(88, 166, 255, 0.2);
+    }
+
+    .perm-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .perm-legend-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .perm-legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      margin-top: 4px;
+      flex: 0 0 auto;
+    }
+
+    .perm-legend-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .perm-legend-meta {
+      font-size: 11px;
+      color: var(--text-sec);
+    }
+
+    .risk-item {
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .risk-item:last-child {
+      border-bottom: none;
+    }
+
+    .risk-item strong {
+      color: var(--text);
+    }
+
+    .risk-item p {
+      font-size: 13px;
+      color: var(--text-sec);
+      line-height: 1.5;
+    }
+
+    .d3-tip {
+      position: absolute;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--text);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.1s;
+      z-index: 100;
+      font-family: 'JetBrains Mono', monospace;
+      max-width: 260px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 48px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .footer a {
+      color: var(--text-sec);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      color: var(--accent);
+    }
+
+    .loading,
+    .error {
+      max-width: 900px;
+      margin: 80px auto;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .error {
+      color: var(--red);
+    }
+
+    @media (max-width:768px) {
+      .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page" id="app">
+    <div class="loading" id="loading">Loading report...</div>
+  </div>
+  <div class="d3-tip" id="tip"></div>
+  <script>
+    const C = {
+      red: '#f85149', orange: '#d29922', green: '#3fb950', blue: '#58a6ff',
+      purple: '#bc8cff', coral: '#f78166', text: '#c9d1d9', sec: '#8b949e',
+      muted: '#484f58', elevated: '#21262d', surface: '#161b22', border: '#30363d'
+    };
+    const tip = d3.select('#tip');
+    const showTip = (ev, html) => tip.html(html).style('opacity', 1).style('left', (ev.pageX + 14) + 'px').style('top', (ev.pageY - 20) + 'px');
+    const hideTip = () => tip.style('opacity', 0);
+    const scoreColor = s => s < 40 ? C.red : s < 70 ? C.orange : C.green;
+    const params = new URLSearchParams(location.search);
+    const dataUrl = params.get('data') || './report.json';
+
+    function gauge(containerId, score, label, sublabel, size) {
+      const r = size * 0.38;
+      const stroke = size > 140 ? 10 : 7;
+      const color = scoreColor(score);
+      const svg = d3.select(containerId).html('').append('svg').attr('width', size).attr('height', size + 36);
+      const g = svg.append('g').attr('transform', `translate(${size / 2}, ${size / 2})`);
+      const bgArc = d3.arc().innerRadius(r - stroke / 2).outerRadius(r + stroke / 2).startAngle(-Math.PI * 0.75).endAngle(Math.PI * 0.75).cornerRadius(stroke);
+      g.append('path').attr('d', bgArc()).attr('fill', C.elevated);
+      const endAngle = -Math.PI * 0.75 + (Math.PI * 1.5 * score / 100);
+      const scoreArc = d3.arc().innerRadius(r - stroke / 2).outerRadius(r + stroke / 2).startAngle(-Math.PI * 0.75).cornerRadius(stroke);
+      const path = g.append('path').attr('fill', color).attr('opacity', 0.9);
+      path.transition().duration(600).attrTween('d', () => {
+        const interp = d3.interpolate(-Math.PI * 0.75, endAngle);
+        return t => scoreArc.endAngle(interp(t))();
+      });
+      const txt = g.append('text').attr('text-anchor', 'middle').attr('y', size > 140 ? 6 : 4).attr('font-size', size > 140 ? 40 : 24).attr('fill', color).attr('font-family', "'JetBrains Mono', monospace").attr('font-weight', 700);
+      d3.select({ v: 0 }).transition().duration(600).tween('text', function () {
+        const i = d3.interpolateRound(0, score);
+        return t => txt.text(i(t));
+      });
+      svg.append('text').attr('x', size / 2).attr('y', size + 6).attr('text-anchor', 'middle').attr('font-size', size > 140 ? 13 : 11).attr('font-weight', 600).attr('fill', C.sec).text(label);
+      svg.append('text').attr('x', size / 2).attr('y', size + 20).attr('text-anchor', 'middle').attr('font-size', 10).attr('fill', C.muted).text(sublabel);
+    }
+
+    function hbar(id, data, left = 120) {
+      const m = { top: 4, right: 44, bottom: 4, left }, bh = 22, gap = 5, h = data.length * (bh + gap) + m.top + m.bottom, w = 500;
+      const svg = d3.select(id).html('').append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+      const x = d3.scaleLinear().domain([0, d3.max(data, d => d.v) || 1]).range([0, w - m.left - m.right]);
+      const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+      data.forEach((d, i) => {
+        const y = i * (bh + gap);
+        g.append('rect').attr('x', 0).attr('y', y).attr('width', 0).attr('height', bh).attr('rx', 3).attr('fill', d.c).attr('opacity', 0.2)
+          .on('mouseover', ev => showTip(ev, `<div>${d.l}</div><div><strong>${d.v}</strong></div>`))
+          .on('mouseout', hideTip)
+          .transition().duration(400).delay(i * 30).attr('width', x(d.v));
+        g.append('text').attr('x', -8).attr('y', y + bh / 2).attr('dy', '.35em').attr('text-anchor', 'end').attr('font-size', 11).attr('fill', C.sec).text(d.l);
+        g.append('text').attr('x', x(d.v) + 6).attr('y', y + bh / 2).attr('dy', '.35em').attr('font-size', 11).attr('font-weight', 600).attr('fill', d.c).text(d.v);
+      });
+    }
+
+    function severityStack(id, items) {
+      const total = items.reduce((s, d) => s + d.v, 0);
+      if (!total) { d3.select(id).html('<div style="font-size:12px;color:var(--text-muted);padding:20px 0">No flagged commands.</div>'); return; }
+      const w = 460, rowH = 44, gap = 6, h = items.length * (rowH + gap) + 8;
+      const svg = d3.select(id).html('').append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+      const maxVal = d3.max(items, d => d.v) || 1;
+      const barW = w - 140;
+      items.forEach((d, i) => {
+        const y = i * (rowH + gap) + 4;
+        const bw = (d.v / maxVal) * barW;
+        const pct = ((d.v / total) * 100).toFixed(0);
+        svg.append('text').attr('x', 0).attr('y', y + rowH / 2).attr('dy', '.35em')
+          .attr('font-size', 12).attr('font-weight', 600).attr('fill', d.c).text(d.n);
+        svg.append('rect').attr('x', 80).attr('y', y + 6).attr('width', barW).attr('height', rowH - 12)
+          .attr('rx', 3).attr('fill', C.elevated);
+        svg.append('rect').attr('x', 80).attr('y', y + 6).attr('width', 0).attr('height', rowH - 12)
+          .attr('rx', 3).attr('fill', d.c).attr('opacity', 0.25)
+          .on('mouseover', ev => showTip(ev, `<div>${d.n}</div><div><strong>${d.v}</strong> commands (${pct}%)</div>`))
+          .on('mouseout', hideTip)
+          .transition().duration(400).delay(i * 50).attr('width', Math.max(bw, 2));
+        svg.append('text').attr('x', 80 + bw + 8).attr('y', y + rowH / 2).attr('dy', '.35em')
+          .attr('font-size', 13).attr('font-weight', 600).attr('fill', d.c)
+          .attr('font-family', "'JetBrains Mono', monospace")
+          .attr('opacity', 0).transition().duration(300).delay(i * 50 + 300).attr('opacity', 1)
+          .selection().text(`${d.v}`);
+        svg.append('text').attr('x', 80 + bw + 8 + String(d.v).length * 9 + 6).attr('y', y + rowH / 2).attr('dy', '.35em')
+          .attr('font-size', 10).attr('fill', C.muted)
+          .attr('font-family', "'JetBrains Mono', monospace")
+          .text(`${pct}%`);
+      });
+    }
+
+    function donut(id, data, total, centerText) {
+      const w = 280, h = 280;
+      const svg = d3.select(id).html('').append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+      const g = svg.append('g').attr('transform', `translate(${w / 2},${w / 2 - 10})`);
+      const pie = d3.pie().value(d => d.v).sort(null).padAngle(0.03);
+      const arc = d3.arc().innerRadius(78).outerRadius(108);
+      g.append('circle').attr('r', 93).attr('fill', 'none').attr('stroke', C.elevated).attr('stroke-width', 30);
+      g.selectAll('path').data(pie(data)).join('path').attr('d', arc).attr('fill', d => d.data.c).attr('opacity', 0.9)
+        .attr('stroke', C.surface).attr('stroke-width', 2)
+        .on('mouseover', (ev, d) => showTip(ev, `<div>${d.data.l}</div><div><strong>${d.data.v}</strong> (${((d.data.v / total) * 100).toFixed(0)}%)</div>`))
+        .on('mouseout', hideTip);
+      g.append('text').attr('text-anchor', 'middle').attr('y', -6).attr('font-size', 24).attr('font-weight', 600).attr('fill', C.red).text(centerText);
+      g.append('text').attr('text-anchor', 'middle').attr('y', 14).attr('font-size', 10).attr('fill', C.sec).text('bypass share');
+    }
+
+    function hourBars(id, data) {
+      const modes = [
+        { key: 'bypass', label: 'bypassPermissions', color: C.red },
+        { key: 'accept_edits', label: 'acceptEdits', color: C.orange },
+        { key: 'default', label: 'default', color: C.green },
+      ];
+      const items = data.slice().sort((a, b) => a.hour - b.hour);
+      const m = { top: 10, right: 12, bottom: 28, left: 30 }, w = 520, h = 220;
+      const innerW = w - m.left - m.right, innerH = h - m.top - m.bottom;
+      const svg = d3.select(id).html('').append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+      const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+      const x = d3.scaleBand().domain(items.map(d => d.hour)).range([0, innerW]).padding(0.18);
+      const maxTotal = d3.max(items, d => (d.bypass || 0) + (d.accept_edits || 0) + (d.default || 0)) || 1;
+      const y = d3.scaleLinear().domain([0, maxTotal]).nice().range([innerH, 0]);
+      g.append('g').attr('transform', `translate(0,${innerH})`)
+        .call(d3.axisBottom(x).tickValues(items.filter(d => d.hour % 3 === 0).map(d => d.hour)).tickFormat(d => String(d).padStart(2, '0')))
+        .call(g => g.selectAll('text').attr('fill', C.muted).attr('font-size', 10))
+        .call(g => g.selectAll('path,line').attr('stroke', C.border));
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(4))
+        .call(g => g.selectAll('text').attr('fill', C.muted).attr('font-size', 10))
+        .call(g => g.selectAll('path,line').attr('stroke', C.border));
+      items.forEach((d, i) => {
+        let cumY = innerH;
+        const total = (d.bypass || 0) + (d.accept_edits || 0) + (d.default || 0);
+        modes.forEach(mode => {
+          const val = d[mode.key] || 0;
+          if (val === 0) return;
+          const barH = innerH - y(val);
+          cumY -= barH;
+          g.append('rect')
+            .attr('x', x(d.hour)).attr('y', innerH).attr('width', x.bandwidth()).attr('height', 0)
+            .attr('fill', mode.color).attr('opacity', 0.8)
+            .on('mouseover', ev => {
+              const pct = total ? ((val / total) * 100).toFixed(0) : '0';
+              showTip(ev, `<div>${String(d.hour).padStart(2, '0')}:00 - ${mode.label}</div><div><strong>${val}</strong> prompts (${pct}%)</div><div style="color:${C.muted};font-size:11px">${total} total</div>`);
+            })
+            .on('mouseout', hideTip)
+            .transition().duration(400).delay(i * 15)
+            .attr('y', cumY).attr('height', barH);
+        });
+        if (total > 0) {
+          const bypassPct = ((d.bypass || 0) / total * 100).toFixed(0);
+          g.append('text')
+            .attr('x', x(d.hour) + x.bandwidth() / 2).attr('y', y(total) - 4)
+            .attr('text-anchor', 'middle').attr('font-size', 8)
+            .attr('font-family', "'JetBrains Mono', monospace").attr('fill', C.sec)
+            .attr('opacity', 0).text(bypassPct + '%')
+            .transition().duration(300).delay(i * 15 + 400).attr('opacity', 1);
+        }
+      });
+    }
+
+    function dayBars(id, data) {
+      const items = data.slice().sort((a, b) => a.date.localeCompare(b.date));
+      const m = { top: 16, right: 40, bottom: 36, left: 34 }, w = 900, h = 260;
+      const innerW = w - m.left - m.right, innerH = h - m.top - m.bottom;
+      const svg = d3.select(id).html('').append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+      const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+      const x = d3.scaleBand().domain(items.map(d => d.date)).range([0, innerW]).padding(0.12);
+      const y = d3.scaleLinear().domain([0, 100]).range([innerH, 0]);
+      const step = Math.max(1, Math.ceil(items.length / 15));
+      const tickDates = items.filter((_, i) => i % step === 0).map(d => d.date);
+      g.append('g').attr('transform', `translate(0,${innerH})`)
+        .call(d3.axisBottom(x).tickValues(tickDates).tickFormat(d => d.slice(5)))
+        .call(g => g.selectAll('text').attr('fill', C.muted).attr('font-size', 9).attr('transform', 'rotate(-35)').attr('text-anchor', 'end'))
+        .call(g => g.selectAll('path,line').attr('stroke', C.border));
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(5).tickFormat(d => d + '%'))
+        .call(g => g.selectAll('text').attr('fill', C.muted).attr('font-size', 10))
+        .call(g => g.selectAll('path,line').attr('stroke', C.border));
+      g.append('line').attr('x1', 0).attr('x2', innerW).attr('y1', y(50)).attr('y2', y(50))
+        .attr('stroke', C.border).attr('stroke-dasharray', '4,4');
+      items.forEach((d, i) => {
+        const total = (d.bypass || 0) + (d.accept_edits || 0) + (d.default || 0);
+        if (total === 0) return;
+        const bypassPct = (d.bypass || 0) / total * 100;
+        const nonBypassPct = 100 - bypassPct;
+        g.append('rect')
+          .attr('x', x(d.date)).attr('y', y(100)).attr('width', x.bandwidth()).attr('height', 0)
+          .attr('fill', C.green).attr('opacity', 0.3)
+          .on('mouseover', ev => showTip(ev, `<div>${d.date}</div><div style="color:${C.green}"><strong>${nonBypassPct.toFixed(0)}%</strong> non-bypass (${total - (d.bypass || 0)})</div><div style="color:${C.muted};font-size:11px">acceptEdits: ${d.accept_edits || 0} / default: ${d.default || 0}</div>`))
+          .on('mouseout', hideTip)
+          .transition().duration(400).delay(i * 10)
+          .attr('height', innerH - y(nonBypassPct));
+        g.append('rect')
+          .attr('x', x(d.date)).attr('y', innerH).attr('width', x.bandwidth()).attr('height', 0)
+          .attr('fill', C.red).attr('opacity', 0.8)
+          .on('mouseover', ev => showTip(ev, `<div>${d.date}</div><div style="color:${C.red}"><strong>${bypassPct.toFixed(0)}%</strong> bypass (${d.bypass || 0})</div><div style="color:${C.muted};font-size:11px">${total} total</div>`))
+          .on('mouseout', hideTip)
+          .transition().duration(400).delay(i * 10)
+          .attr('y', y(bypassPct)).attr('height', innerH - y(bypassPct));
+      });
+      items.forEach((d, i) => {
+        const total = (d.bypass || 0) + (d.accept_edits || 0) + (d.default || 0);
+        if (total === 0) return;
+        const bypassPct = Math.round((d.bypass || 0) / total * 100);
+        if (bypassPct > 0) {
+          g.append('text')
+            .attr('x', x(d.date) + x.bandwidth() / 2).attr('y', y(100) - 4)
+            .attr('text-anchor', 'middle').attr('font-size', 8)
+            .attr('font-family', "'JetBrains Mono', monospace")
+            .attr('fill', bypassPct >= 50 ? C.red : C.sec)
+            .attr('opacity', 0).text(bypassPct + '%')
+            .transition().duration(300).delay(i * 10 + 400).attr('opacity', 1);
+        }
+      });
+    }
+
+    function esc(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function infoIcon(text) {
+      return `<span class="info-icon" title="${esc(text)}" aria-label="${esc(text)}">i</span>`;
+    }
+
+    function statCard(num, label, detail, color = 'var(--text)', info = '') {
+      const labelHtml = info
+        ? `<span class="label-with-info">${label}${infoIcon(info)}</span>`
+        : label;
+      return `<div class="stat-card"><div class="stat-num" style="color:${color}">${num}</div><div class="stat-label">${labelHtml}</div><div class="stat-detail">${detail}</div></div>`;
+    }
+
+    function riskBadge(priority) {
+      return priority === 'P0' ? 'badge-p0' : priority === 'P1' ? 'badge-p1' : 'badge-p2';
+    }
+
+    function arr(value) {
+      return Array.isArray(value) ? value : [];
+    }
+
+    function render(data) {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+  <div class="header">
+    <div class="header-meta">${data.hero.report_title || 'Security Report'} / ${data.hero.transcript_count} transcripts / ${data.hero.project_count} projects / ${Math.round(data.hero.total_entries / 1000)}k entries / ${data.hero.date_range.start || '?'} - ${data.hero.date_range.end || '?'}${data.hero.include_subagents ? ' / incl. subagents' : ''}</div>
+    <div class="gauges-row">
+      <div id="gauge-secrets"></div>
+      <div id="gauge-remote"></div>
+      <div id="gauge-overall"></div>
+      <div id="gauge-permissions"></div>
+      <div id="gauge-commands"></div>
+    </div>
+    <div class="score-legend">
+      <div class="score-legend-item"><div class="score-legend-dot" style="background:var(--red)"></div>0-39 critical</div>
+      <div class="score-legend-item"><div class="score-legend-dot" style="background:var(--orange)"></div>40-69 warning</div>
+      <div class="score-legend-item"><div class="score-legend-dot" style="background:var(--green)"></div>70-100 healthy</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-num">01</span><span class="section-title" style="color:var(--red)">Secret Exposure</span></div>
+    <div class="section-desc">Credentials entered the model context through file reads, pasted values, and command output.</div>
+    <div class="stat-grid" id="secret-stats"></div>
+    <div class="two-col">
+      <div class="panel"><div class="chart-title">Secret Types ${infoIcon('Counts are grouped by detected secret pattern in transcript-derived security findings.')}</div><div class="chart-subtitle">Breakdown of credentials that entered context.</div><div id="chart-secret-types"></div></div>
+      <div class="panel"><div class="chart-title">Repeat Offenders ${infoIcon('Ranks secret names by how often they appeared across all analyzed transcripts and projects.')}</div><div class="chart-subtitle">Values that showed up often enough to become a pattern.</div><table class="data-table"><thead><tr><th>Secret</th><th>Hits</th><th>Projects</th></tr></thead><tbody id="tbl-most-exposed"></tbody></table></div>
+    </div>
+    <div class="panel" style="margin-top:16px"><div class="chart-title">Exposure by Project ${infoIcon('Stacked bars combine sensitive file reads, detected secret values, and environment-file writes per project.')}</div><div class="chart-subtitle">Where the leakage concentrated.</div><div id="chart-project-exposure"></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-num">02</span><span class="section-title" style="color:var(--red)">Remote Access</span></div>
+    <div class="section-desc">Remote command execution across SSH sessions and server connections.</div>
+    <div class="stat-grid" id="ssh-stats"></div>
+    <div class="two-col">
+      <div class="panel"><div class="chart-title">Hosts Accessed ${infoIcon('Host counts are derived from SSH-style remote command events grouped by target host label.')}</div><div class="chart-subtitle">Remote command volume by host.</div><div id="chart-ssh-hosts"></div></div>
+      <div class="panel"><div class="chart-title">Timeline ${infoIcon('Timeline rows aggregate remote command events by day, showing top host and summarized activity.')}</div><div class="chart-subtitle">Concentrated remote activity by date.</div><table class="data-table"><thead><tr><th>Date</th><th>Cmds</th><th>Host</th><th>Activity</th></tr></thead><tbody id="tbl-ssh-timeline"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-num">03</span><span class="section-title" style="color:var(--orange)">Risky Commands</span></div>
+    <div class="section-desc">Flagged shell commands grouped by severity and category.</div>
+    <div class="stat-grid" id="cmd-stats"></div>
+    <div class="two-col">
+      <div class="panel"><div class="chart-title">Severity Distribution ${infoIcon('Counts come from command classification rules that bucket flagged shell commands into critical, high, medium, and low.')}</div><div class="chart-subtitle">Risk level distribution across flagged commands.</div><div id="chart-severity"></div></div>
+      <div class="panel"><div class="chart-title">Categories ${infoIcon('Categories summarize recurring flagged command types such as sudo, git, filesystem, database, or infra operations.')}</div><div class="chart-subtitle">Recurring operation types.</div><div id="chart-categories"></div></div>
+    </div>
+    <div class="two-col" style="margin-top:16px">
+      <div class="panel"><div class="chart-title" style="color:var(--red)">Findings ${infoIcon('This table lists the highest-signal flagged command patterns and their assigned risk levels.')}</div><div class="chart-subtitle">Notable patterns worth reviewing.</div><table class="data-table"><thead><tr><th>Type</th><th>Count</th><th>Risk</th></tr></thead><tbody id="tbl-findings"></tbody></table></div>
+      <div class="panel"><div class="chart-title">Git Safety ${infoIcon('Tracks direct git behaviors: push-to-main, force push, reset -hard, and -no-verify.')}</div><div class="chart-subtitle">Guardrail-relevant git operations.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px" id="git-safety"></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-num">04</span><span class="section-title" style="color:var(--orange)">Permission Discipline</span></div>
+    <div class="section-desc">Permission mode distribution across all analyzed prompts.</div>
+    <div class="two-col" style="margin-bottom:16px">
+      <div class="panel"><div class="chart-title">Mode Distribution ${infoIcon('Shares are derived from prompt counts by permission mode across the full analyzed period.')}</div><div class="chart-subtitle">Distribution across permission modes.</div><div style="display:flex;align-items:center;gap:20px;margin-top:8px"><div id="perm-legend" class="perm-legend" style="flex:0 0 auto"></div><div id="chart-perm-donut" style="max-width:240px;flex:1"></div></div></div>
+      <div class="panel"><div class="chart-title">Prompts by Hour ${infoIcon('Hourly bars aggregate prompt counts and split them by permission mode to show when bypass usage clusters.')}</div><div class="chart-subtitle">When bypass-heavy behavior clusters.</div><div id="chart-bypass-heat"></div></div>
+    </div>
+    <div class="panel"><div class="chart-title">Bypass vs Non-Bypass by Day ${infoIcon('Daily percentages are calculated from bypass prompts versus all other prompt modes for each date.')}</div><div class="chart-subtitle">Daily oversight timeline.</div><div id="chart-day-modes"></div></div>
+    <div class="panel" style="margin-top:16px"><div class="chart-title" style="color:var(--red)">Highest Bypass Projects ${infoIcon('Projects are ranked by bypass percentage with risk bands assigned from the resulting rate and prompt volume.')}</div><div class="chart-subtitle">Projects with weakest permission discipline.</div><table class="data-table"><thead><tr><th>Project</th><th>Bypass Rate</th><th>Prompts</th><th>Risk</th></tr></thead><tbody id="tbl-project-risk"></tbody></table></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-num">05</span><span class="section-title" style="color:var(--purple)">Autonomous Agents</span></div>
+    <div class="section-desc">Subagent spawns and their permission context.</div>
+    <div class="stat-grid" id="agent-stats"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-num">06</span><span class="section-title" style="color:var(--green)">Human Overrides</span></div>
+    <div class="section-desc">Where users added friction by denying or interrupting operations.</div>
+    <div class="stat-grid" id="override-stats"></div>
+    <div class="panel"><div class="chart-title">Most Rejected Tools ${infoIcon('Counts are based on explicit user denials grouped by tool family or action type.')}</div><div class="chart-subtitle">Tool categories that triggered the most hesitation.</div><div id="chart-rejected"></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-num">07</span><span class="section-title" style="color:var(--coral)">User Sentiment</span></div>
+    <div class="section-desc">Language patterns from user prompts across the analyzed corpus.</div>
+    <div class="stat-grid" id="sentiment-stats"></div>
+    <div class="two-col">
+      <div class="panel"><div class="chart-title" style="color:var(--green)">Positive Language ${infoIcon('Derived from detected positive sentiment terms in user prompts.')}</div><div class="chart-subtitle">Words showing satisfaction, momentum, or approval.</div><div id="chart-positive-words"></div></div>
+      <div class="panel"><div class="chart-title" style="color:var(--red)">Negative Language ${infoIcon('Derived from detected negative sentiment terms in user prompts.')}</div><div class="chart-subtitle">Words showing friction, confusion, or frustration.</div><div id="chart-negative-words"></div></div>
+    </div>
+    <div class="panel" style="margin-top:16px"><div class="chart-title">Sentiment by Project ${infoIcon('Project rows compare counts of positive and negative sentiment terms found in prompts for each project.')}</div><div class="chart-subtitle">Some projects produce cleaner workflows than others.</div>
+      <table class="data-table"><thead><tr><th>Project</th><th style="color:var(--green)">Positive</th><th style="color:var(--red)">Negative</th><th>Total Prompts</th></tr></thead><tbody id="tbl-sentiment-projects"></tbody></table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header"><span class="section-num">08</span><span class="section-title" style="color:var(--red)">Prioritized Risks</span></div>
+    <div class="section-desc">Escalated findings and patterns that held.</div>
+    <div class="panel" style="margin-bottom:16px" id="risk-items"></div>
+    <div class="panel"><div class="chart-title">What Held ${infoIcon('Notable absence-of-failure signals or lower-risk patterns detected in the same dataset.')}</div><div style="font-size:13px;color:var(--text-sec);line-height:2;margin-top:4px" id="working-well"></div></div>
+  </div>
+  <div class="footer"><a href="https://vibenalytics.com">vibenalytics.com</a></div>
+  `;
+
+      gauge('#gauge-secrets', data.scores.secrets, 'Secrets', `${data.secret_exposure.total_secrets} exposed`, 120);
+      gauge('#gauge-remote', data.scores.remote_access, 'Remote', `${data.ssh_remote_access.ssh_commands} ssh cmds`, 120);
+      gauge('#gauge-overall', data.scores.overall, 'Overall', 'security score', 180);
+      gauge('#gauge-permissions', data.scores.permissions, 'Permissions', `${Math.round(data.permission_discipline.bypass_pct)}% bypass`, 120);
+      gauge('#gauge-commands', data.scores.commands, 'Commands', `${data.destructive_commands.critical} critical`, 120);
+
+      document.getElementById('secret-stats').innerHTML = [
+        statCard(data.secret_exposure.total_secrets, 'Secrets Exposed', 'Credential values visible in transcripts', 'var(--red)', 'Count of detected secret values found in transcript-derived findings across all projects.'),
+        statCard(data.secret_exposure.sensitive_reads, 'Sensitive Reads', 'Reads of secret-bearing files', 'var(--red)', 'Number of reads against files classified as likely containing secrets.'),
+        statCard(data.secret_exposure.env_writes, '.env Writes', 'Edits to environment files', 'var(--orange)', 'Number of write events targeting environment files.'),
+        statCard(data.secret_exposure.env_paths, '.env Paths', 'Unique env files touched', 'var(--blue)', 'Unique environment-file paths observed in the analyzed dataset.')
+      ].join('');
+
+      document.getElementById('ssh-stats').innerHTML = [
+        statCard(data.ssh_remote_access.ssh_commands, 'SSH Commands', 'Remote executions total', 'var(--red)', 'Total SSH-related command events detected.'),
+        statCard(data.ssh_remote_access.remote_command_ssh, 'Remote Command', 'Single-command ssh usage', 'var(--red)', 'Subset of SSH usage that executed one-off remote commands.'),
+        statCard(data.ssh_remote_access.unique_hosts, 'Unique Hosts', 'Distinct servers touched', 'var(--blue)', 'Distinct host labels extracted from SSH-related events.'),
+        statCard(data.ssh_remote_access.interactive_ssh, 'Interactive SSH', 'Full shell sessions', 'var(--blue)', 'SSH events classified as interactive sessions.')
+      ].join('');
+
+      document.getElementById('cmd-stats').innerHTML = [
+        statCard(data.destructive_commands.critical, 'Critical', 'Obvious blast radius', 'var(--red)', 'Flagged commands matching the highest-risk rules.'),
+        statCard(data.destructive_commands.high, 'High', 'Risky mutations', 'var(--orange)', 'Commands matching high-risk rules like direct main-branch pushes.'),
+        statCard(data.destructive_commands.medium, 'Medium', 'Worth watching', 'var(--blue)', 'Commands representing meaningful operational risk.'),
+        statCard(data.destructive_commands.low, 'Low', 'Lower signal', 'var(--text-muted)', 'Commands that trip lower-confidence risk heuristics.')
+      ].join('');
+
+      document.getElementById('agent-stats').innerHTML = [
+        statCard(data.autonomous_agents.agents_spawned, 'Agents Spawned', 'Autonomous agents launched', 'var(--purple)', 'Total subagent or autonomous-agent launches detected.'),
+        statCard(data.autonomous_agents.in_bypass_mode, 'In Bypass Mode', 'Agents spawned without checks', 'var(--red)', 'Agent launches while the parent workflow was in bypass mode.'),
+        statCard(data.autonomous_agents.from_top_project.count, `From ${data.autonomous_agents.from_top_project.project}`, 'Most concentrated source', 'var(--orange)', 'Agent launches from the single project with the highest volume.'),
+        statCard(data.autonomous_agents.rejections, 'Rejections', 'Spawn attempts blocked', 'var(--green)', 'User actions that explicitly denied agent spawning.')
+      ].join('');
+
+      document.getElementById('override-stats').innerHTML = [
+        statCard(data.human_overrides.denials, 'Denials', 'Explicit tool rejections', 'var(--green)', 'Count of tool requests explicitly denied by the user.'),
+        statCard(data.human_overrides.interrupts, 'Interrupts', 'Responses stopped mid-run', 'var(--green)', 'Count of user interruptions that stopped an in-progress action.'),
+        statCard(data.human_overrides.destructive_catches, 'Dangerous Catches', 'Interruptions during risky ops', 'var(--green)', 'Interventions during commands classified as risky or destructive.'),
+        statCard(`${Math.round(data.human_overrides.override_rate)}%`, 'Override Rate', 'Human interventions per prompt', 'var(--blue)', 'Denials plus interrupts divided by total analyzed prompts.')
+      ].join('');
+
+      hbar('#chart-secret-types', arr(data.secret_exposure.secret_types).map(d => ({ l: d.label, v: d.count, c: d.label.includes('SECRET') || d.label.includes('KEY') || d.label.includes('token') || d.label.includes('Private') ? C.red : C.blue })), 120);
+      hbar('#chart-ssh-hosts', arr(data.ssh_remote_access.hosts_accessed).map((d, i) => ({ l: d.label, v: d.count, c: i < 2 ? C.red : C.blue })), 140);
+      hbar('#chart-categories', arr(data.destructive_commands.by_category).map((d, i) => ({ l: d.label, v: d.count, c: i === 0 ? C.blue : i < 3 ? C.orange : C.red })), 120);
+      hbar('#chart-rejected', arr(data.human_overrides.most_rejected_tools).map((d, i) => ({ l: d.label, v: d.count, c: i < 2 ? C.green : C.blue })), 110);
+
+      const sent = data.user_sentiment;
+      const posNegRatio = sent.total_negative > 0 ? Math.round(sent.total_positive / sent.total_negative) : sent.total_positive;
+      document.getElementById('sentiment-stats').innerHTML = [
+        statCard(sent.total_positive, 'Positive Words', `${sent.positive_rate}% of prompts`, 'var(--green)', 'Total matched positive sentiment terms across analyzed prompts.'),
+        statCard(sent.total_negative, 'Negative Words', `${sent.negative_rate}% of prompts`, 'var(--red)', 'Total matched negative sentiment terms across analyzed prompts.'),
+        statCard(`${posNegRatio}:1`, 'Positive : Negative', 'Ratio', 'var(--green)', 'Ratio of positive to negative sentiment term matches.'),
+        statCard(sent.prompt_total, 'Total Prompts', 'Included in sentiment pass', 'var(--blue)', 'Number of prompts included in the sentiment analysis pass.'),
+      ].join('');
+      hbar('#chart-positive-words', arr(sent.top_positive).map((d, i) => ({ l: d.label, v: d.count, c: i < 3 ? C.green : C.blue })), 110);
+      hbar('#chart-negative-words', arr(sent.top_negative).map((d, i) => ({ l: d.label, v: d.count, c: i === 0 ? C.red : C.coral })), 110);
+      document.getElementById('tbl-sentiment-projects').innerHTML = arr(sent.by_project).map(r => `<tr><td class="mono">${r.project}</td><td class="mono" style="color:var(--green)">${r.positive}</td><td class="mono" style="color:var(--red)">${r.negative}</td><td class="mono">${r.total_prompts}</td></tr>`).join('');
+
+      severityStack('#chart-severity', [
+        { n: 'Critical', v: data.destructive_commands.critical, c: C.red },
+        { n: 'High', v: data.destructive_commands.high, c: C.orange },
+        { n: 'Medium', v: data.destructive_commands.medium, c: C.blue },
+        { n: 'Low', v: data.destructive_commands.low, c: C.muted }
+      ]);
+      donut('#chart-perm-donut', arr(data.permission_discipline.mode_distribution).map((d, i) => ({ l: d.label, v: d.count, c: [C.red, C.orange, C.green, C.purple][i % 4] })), data.permission_discipline.prompt_total, `${Math.round(data.permission_discipline.bypass_pct)}%`);
+      hourBars('#chart-bypass-heat', arr(data.permission_discipline.modes_by_hour));
+      dayBars('#chart-day-modes', arr(data.permission_discipline.modes_by_day));
+      document.getElementById('perm-legend').innerHTML = arr(data.permission_discipline.mode_distribution).map((d, i) => {
+        const color = [C.red, C.orange, C.green, C.purple][i % 4];
+        const pct = data.permission_discipline.prompt_total ? Math.round((d.count / data.permission_discipline.prompt_total) * 100) : 0;
+        return `<div class="perm-legend-item"><span class="perm-legend-dot" style="background:${color}"></span><div><div class="perm-legend-label">${d.label}</div><div class="perm-legend-meta">${d.count} / ${pct}%</div></div></div>`;
+      }).join('');
+
+      document.getElementById('tbl-most-exposed').innerHTML = arr(data.secret_exposure.most_exposed).map(r => `<tr><td>${r.secret}</td><td class="mono">${r.hits}</td><td class="mono">${r.projects}</td></tr>`).join('');
+      document.getElementById('tbl-ssh-timeline').innerHTML = arr(data.ssh_remote_access.timeline).map(r => `<tr><td class="mono">${r.date}</td><td class="mono">${r.commands}</td><td class="mono">${r.top_host}</td><td>${r.activity_summary}</td></tr>`).join('');
+      document.getElementById('tbl-findings').innerHTML = arr(data.destructive_commands.critical_findings).map(r => `<tr><td>${r.kind}</td><td class="mono">${r.count}</td><td><span class="badge ${r.risk === 'CRITICAL' ? 'badge-p0' : 'badge-p1'}">${r.risk}</span></td></tr>`).join('');
+      document.getElementById('tbl-project-risk').innerHTML = arr(data.permission_discipline.highest_bypass_projects).map(r => `<tr><td class="mono">${r.project}</td><td class="mono">${r.bypass_pct}%</td><td class="mono">${r.prompts}</td><td><span class="badge ${r.risk === 'CRITICAL' ? 'badge-p0' : r.risk === 'HIGH' ? 'badge-p1' : 'badge-p2'}">${r.risk}</span></td></tr>`).join('');
+      document.getElementById('risk-items').innerHTML = arr(data.prioritized_risks.items).map(r => `<div class="risk-item"><span class="badge ${riskBadge(r.priority)}">${r.priority}</span><p><strong>${r.title}</strong> - ${r.description}</p></div>`).join('');
+      document.getElementById('working-well').innerHTML = arr(data.prioritized_risks.whats_working_well).map(t => `<div>${t}</div>`).join('');
+
+      const git = data.destructive_commands.git_safety;
+      document.getElementById('git-safety').innerHTML = [
+        ['Push to main', git.push_to_main, 'var(--orange)'],
+        ['Force push', git.force_push, 'var(--green)'],
+        ['reset -hard', git.reset_hard, 'var(--green)'],
+        ['-no-verify', git.no_verify, 'var(--green)']
+      ].map(([label, value, color]) => `<div style="background:var(--elevated);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:${color}">${value}</div><div style="font-size:11px;color:var(--text-sec);margin-top:4px">${label}</div></div>`).join('');
+
+      const projData = arr(data.secret_exposure.exposure_by_project).slice(0, 8);
+      (function () {
+        const m = { top: 8, right: 20, bottom: 28, left: 160 }, bh = 24, gap = 6, h = projData.length * (bh + gap) + m.top + m.bottom, w = 700;
+        const svg = d3.select('#chart-project-exposure').html('').append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+        const x = d3.scaleLinear().domain([0, d3.max(projData, d => d.total) || 1]).range([0, w - m.left - m.right]);
+        const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+        projData.forEach((d, i) => {
+          const y = i * (bh + gap);
+          const parts = [
+            { k: 'reads', v: d.reads, c: C.blue, l: 'Reads' },
+            { k: 'secrets', v: d.secrets, c: C.red, l: 'Secrets' },
+            { k: 'writes', v: d.writes, c: C.orange, l: 'Writes' }
+          ];
+          let cx = 0;
+          parts.forEach(p => {
+            g.append('rect').attr('x', cx).attr('y', y).attr('width', x(p.v)).attr('height', bh).attr('rx', 2).attr('fill', p.c).attr('opacity', 0.25)
+              .on('mouseover', ev => showTip(ev, `<div>${d.project} / ${p.l}</div><div><strong>${p.v}</strong></div>`))
+              .on('mouseout', hideTip);
+            cx += x(p.v);
+          });
+          g.append('text').attr('x', -8).attr('y', y + bh / 2).attr('dy', '.35em').attr('text-anchor', 'end').attr('font-size', 11).attr('fill', C.sec).text(d.project);
+        });
+      })();
+    }
+
+    fetch(dataUrl)
+      .then(r => { if (!r.ok) throw new Error(`Failed to load ${dataUrl}: ${r.status}`); return r.json(); })
+      .then(render)
+      .catch(err => {
+        document.getElementById('app').innerHTML = `<div class="error">Failed to load report JSON.<br><br>${err.message}</div>`;
+      });
+  </script>
+</body>
+
+</html>

@@ -1,13 +1,13 @@
 {
-  "name": "@vibenalytics/security-linux-x64",
+  "name": "cc-vibeguard-linux-x64",
   "version": "0.0.0",
-  "description": "vibenalytics-security binary for Linux x64",
+  "description": "cc-vibeguard binary for Linux x64",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vibenalytics/vibenalytics-security"
+    "url": "https://github.com/vibenalytics/cc-vibeguard"
   },
   "os": ["linux"],
   "cpu": ["x64"],
-  "files": ["vibenalytics-security"]
+  "files": ["cc-vibeguard"]
 }

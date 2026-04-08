@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "vibenalytics-security",
-    about = "One-shot security analysis for Claude Code transcripts",
+    name = "cc-vibeguard",
+    about = "Security audit & risk dashboard for Claude Code sessions",
     version
 )]
 struct Cli {
@@ -66,7 +66,7 @@ fn main() -> Result<()> {
     let out_dir = if let Some(ref json_out) = cli.json_out {
         json_out.parent().unwrap_or(std::path::Path::new(".")).to_path_buf()
     } else if let Some(home) = std::env::var_os("HOME") {
-        PathBuf::from(home).join("Documents").join("vibenalytics-security")
+        PathBuf::from(home).join("Documents").join("cc-vibeguard")
     } else {
         PathBuf::from(".")
     };

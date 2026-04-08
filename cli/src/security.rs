@@ -193,6 +193,16 @@ pub struct AutonomousAgents {
     pub in_bypass_mode: u32,
     pub from_top_project: TopProjectCount,
     pub rejections: u32,
+    pub agents_by_day: Vec<DayAgents>,
+    pub models_used: Vec<LabeledCount>,
+    pub subagent_models: Vec<LabeledCount>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DayAgents {
+    pub date: String,
+    pub spawned: u32,
+    pub in_bypass: u32,
 }
 
 #[derive(Debug, Serialize)]
@@ -1514,6 +1524,9 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
 
     let mut agent_total = 0u32;
     let mut agent_bypass = 0u32;
+    let mut agents_by_day: HashMap<String, (u32, u32)> = HashMap::new();
+    let mut model_counts: HashMap<String, u32> = HashMap::new();
+    let mut subagent_model_counts: HashMap<String, u32> = HashMap::new();
     let mut agent_rejections = 0u32;
     let mut agents_by_project: HashMap<String, u32> = HashMap::new();
 
@@ -1537,6 +1550,12 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
         interrupts += session.interrupts;
         api_errors += session.api_errors;
         compactions += session.compactions;
+        for (model, count) in &session.models {
+            *model_counts.entry(model.clone()).or_insert(0) += count;
+            if session.is_subagent {
+                *subagent_model_counts.entry(model.clone()).or_insert(0) += count;
+            }
+        }
 
         for prompt in &session.prompts {
             if !session.is_subagent {
@@ -1673,8 +1692,14 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
                 "Agent" | "Task" => {
                     agent_total += 1;
                     *agents_by_project.entry(session.project.clone()).or_insert(0) += 1;
-                    if tool.permission_mode.as_deref() == Some("bypassPermissions") {
+                    let is_bypass = tool.permission_mode.as_deref() == Some("bypassPermissions");
+                    if is_bypass {
                         agent_bypass += 1;
+                    }
+                    if let Some(day_str) = session.started_at.get(0..10) {
+                        let entry = agents_by_day.entry(day_str.to_string()).or_insert((0, 0));
+                        entry.0 += 1;
+                        if is_bypass { entry.1 += 1; }
                     }
                 }
                 _ => {}
@@ -1805,9 +1830,9 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
         })
         .collect();
     most_exposed.sort_by(|a, b| b.hits.cmp(&a.hits).then(a.secret.cmp(&b.secret)));
-    most_exposed.truncate(10);
+    most_exposed.truncate(50);
 
-    let secret_types = sorted_counts(secrets.by_type, 10);
+    let secret_types = sorted_counts(secrets.by_type, 50);
 
     let mut exposure_projects: Vec<ProjectExposure> = exposure_by_project
         .into_iter()
@@ -1820,7 +1845,7 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
         })
         .collect();
     exposure_projects.sort_by(|a, b| b.total.cmp(&a.total).then(a.project.cmp(&b.project)));
-    exposure_projects.truncate(10);
+    exposure_projects.truncate(50);
 
     let mut ssh_timeline: Vec<SshDay> = ssh_days
         .into_iter()
@@ -1836,9 +1861,9 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
         })
         .collect();
     ssh_timeline.sort_by(|a, b| b.commands.cmp(&a.commands).then(a.date.cmp(&b.date)));
-    ssh_timeline.truncate(10);
+    ssh_timeline.truncate(50);
     ssh_timeline.sort_by(|a, b| a.date.cmp(&b.date));
-    let hosts_accessed = sorted_counts(ssh_hosts, 10);
+    let hosts_accessed = sorted_counts(ssh_hosts, 50);
 
     let mut bypass_projects = Vec::new();
     for (project, total_prompts) in prompt_counts_by_project {
@@ -1865,7 +1890,7 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
             .unwrap_or(Ordering::Equal)
             .then(b.prompts.cmp(&a.prompts))
     });
-    bypass_projects.truncate(10);
+    bypass_projects.truncate(50);
 
     let bash_denials = denied_tools.get("Bash").copied().unwrap_or(0);
     let top_agent_project = agents_by_project
@@ -1873,8 +1898,8 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
         .max_by(|a, b| a.1.cmp(b.1).then_with(|| a.0.cmp(b.0)))
         .map(|(project, count)| TopProjectCount { project: project.clone(), count: *count })
         .unwrap_or(TopProjectCount { project: "unknown".to_string(), count: 0 });
-    let severity_distribution = sorted_counts(risk.severity.clone(), 10);
-    let by_category = sorted_counts(risk.category.clone(), 10);
+    let severity_distribution = sorted_counts(risk.severity.clone(), 50);
+    let by_category = sorted_counts(risk.category.clone(), 50);
     let mut critical_findings: Vec<CommandFinding> = risk
         .finding_counts
         .into_iter()
@@ -1889,9 +1914,9 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
         })
         .collect();
     critical_findings.sort_by(|a, b| b.count.cmp(&a.count).then(a.kind.cmp(&b.kind)));
-    critical_findings.truncate(12);
-    let mode_distribution = sorted_counts(mode_counts, 10);
-    let most_rejected_tools = sorted_counts(denied_tools, 10);
+    critical_findings.truncate(50);
+    let mode_distribution = sorted_counts(mode_counts, 50);
+    let most_rejected_tools = sorted_counts(denied_tools, 50);
     let mut whats_working_well = Vec::new();
     if risk.force_push == 0 {
         whats_working_well.push("No force-push detected".to_string());
@@ -2050,6 +2075,16 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
             in_bypass_mode: agent_bypass,
             from_top_project: top_agent_project,
             rejections: agent_rejections,
+            agents_by_day: {
+                let mut items: Vec<DayAgents> = agents_by_day
+                    .into_iter()
+                    .map(|(date, (spawned, in_bypass))| DayAgents { date, spawned, in_bypass })
+                    .collect();
+                items.sort_by(|a, b| a.date.cmp(&b.date));
+                items
+            },
+            models_used: sorted_counts(model_counts, 20),
+            subagent_models: sorted_counts(subagent_model_counts, 20),
         },
         human_overrides: HumanOverrides {
             denials,
@@ -2073,7 +2108,7 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
                 })
                 .collect();
             by_project.sort_by(|a, b| b.positive.cmp(&a.positive).then(a.project.cmp(&b.project)));
-            by_project.truncate(10);
+            by_project.truncate(50);
             UserSentiment {
                 total_negative: neg_total,
                 prompts_with_negative: neg_prompts_total,
@@ -2082,8 +2117,8 @@ pub fn analyze(sessions: Vec<ParsedSession>, include_subagents: bool) -> Report 
                 prompt_total,
                 negative_rate,
                 positive_rate,
-                top_negative: sorted_counts(neg_word_counts, 10),
-                top_positive: sorted_counts(pos_word_counts, 10),
+                top_negative: sorted_counts(neg_word_counts, 50),
+                top_positive: sorted_counts(pos_word_counts, 50),
                 by_project,
             }
         },
