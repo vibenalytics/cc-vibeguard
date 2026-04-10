@@ -36,7 +36,7 @@ Opens a self-contained HTML report in your browser. No data leaves your machine.
 npx cc-vibeguard
 ```
 
-That's it. Scans `~/.claude/projects`, writes a self-contained HTML report to `~/Documents/cc-vibeguard/report.html`, and opens it in your browser.
+That's it. Scans `~/.claude/projects`, writes a self-contained HTML report to `~/Downloads/cc-vibeguard-report.html`, and opens it in your browser.
 
 Requires Node.js 18+. Prebuilt binaries for macOS (ARM64, x64) and Linux (x64, ARM64).
 

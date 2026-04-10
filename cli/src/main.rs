@@ -68,8 +68,8 @@ impl Spinner {
 fn main() -> Result<()> {
     let _ = Cli::parse();
 
-    let projects_dir = std::env::var_os("HOME")
-        .map(|h| PathBuf::from(h).join(".claude").join("projects"))
+    let projects_dir = dirs::home_dir()
+        .map(|h| h.join(".claude").join("projects"))
         .unwrap_or_else(|| PathBuf::from(".claude/projects"));
     let projects_dir_str = projects_dir.to_string_lossy().to_string();
 
@@ -85,8 +85,8 @@ fn main() -> Result<()> {
     spinner.set_message("Generating report...");
 
     let json = serde_json::to_string(&analysis)?;
-    let out_dir = std::env::var_os("HOME")
-        .map(|h| PathBuf::from(h).join("Documents").join("cc-vibeguard"))
+    let out_dir = dirs::download_dir()
+        .or_else(|| dirs::home_dir().map(|h| h.join("Downloads")))
         .unwrap_or_else(|| PathBuf::from("."));
     fs::create_dir_all(&out_dir)?;
 
@@ -95,7 +95,7 @@ fn main() -> Result<()> {
         "fetch(dataUrl)\n      .then(r => { if (!r.ok) throw new Error(`Failed to load ${dataUrl}: ${r.status}`); return r.json(); })\n      .then(render)",
         &format!("Promise.resolve({}).then(render)", json),
     );
-    let html_path = out_dir.join("report.html");
+    let html_path = out_dir.join("cc-vibeguard-report.html");
     fs::write(&html_path, &html)?;
 
     spinner.finish(&format!("Report ready: {}", html_path.display()));
