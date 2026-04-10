@@ -30,41 +30,15 @@ Opens a self-contained HTML report in your browser. No data leaves your machine.
 
 **Persona** - Assigns a behavioral persona based on your patterns. 25+ personas ranging from "Fort Knox" and "Zero Trust Human" to "Permission Anarchist" and "YOLO Deployer".
 
-## Installation
-
-```bash
-# Run directly (no install)
-npx cc-vibeguard
-
-# Or install globally
-npm install -g cc-vibeguard
-cc-vibeguard
-```
-
-Requires Node.js 18+. Prebuilt binaries for macOS (ARM64, x64) and Linux (x64, ARM64).
-
 ## Usage
 
 ```bash
-# Default - scans ~/.claude/projects, opens report in browser
-cc-vibeguard
-
-# Custom projects directory
-cc-vibeguard --projects-dir /path/to/claude/projects
-
-# Output JSON to stdout
-cc-vibeguard --json
-
-# Write report to specific path
-cc-vibeguard --json-out ./my-report.json
-
-# Quiet mode (no progress output)
-cc-vibeguard --quiet
+npx cc-vibeguard
 ```
 
-The report is written to `~/Documents/cc-vibeguard/` by default:
-- `report.json` - raw data
-- `report.html` - self-contained visual dashboard
+That's it. Scans `~/.claude/projects`, writes a self-contained HTML report to `~/Documents/cc-vibeguard/report.html`, and opens it in your browser.
+
+Requires Node.js 18+. Prebuilt binaries for macOS (ARM64, x64) and Linux (x64, ARM64).
 
 ## Report sections
 
@@ -82,16 +56,12 @@ The report is written to `~/Documents/cc-vibeguard/` by default:
 | User sentiment | Negative/positive rates, top keywords, per-project breakdown |
 | Prioritized risks | Actionable risk items + what's working well |
 
-## Sample report
-
-See [`sample/report.json`](sample/report.json) for example output.
-
 ## How it works
 
 1. Discovers all `.jsonl` transcript files in `~/.claude/projects/`
 2. Parses each session: user prompts, tool calls, tool results, assistant responses
 3. Runs security analysis across all parsed sessions
-4. Generates JSON report + self-contained HTML dashboard
+4. Generates a self-contained HTML dashboard with the data embedded
 5. Opens the report in your browser
 
 All analysis runs locally. No network requests. No telemetry.

@@ -1,3 +1,4 @@
 cli/target/
 ui/testing/
 .DS_Store
+node_modules/
