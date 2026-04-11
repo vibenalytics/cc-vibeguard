@@ -1,76 +1,124 @@
-# cc-vibeguard
+<p align="center">
+  <img src="assets/banner.png" alt="cc-vibeguard" width="100%">
+</p>
 
-Security audit & risk dashboard for Claude Code sessions.
+<p align="center">
+  Security audit and risk dashboard for Claude Code sessions.
+</p>
 
-![cc-vibeguard demo](assets/demo.gif)
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-18%2B-111111?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 18+">
+  <img src="https://img.shields.io/badge/Rust-CLI-111111?style=flat-square&logo=rust&logoColor=white" alt="Rust CLI">
+  <img src="https://img.shields.io/badge/Privacy-Local%20only-111111?style=flat-square" alt="Local only">
+  <img src="https://img.shields.io/badge/Output-Self--contained%20HTML-111111?style=flat-square" alt="Self-contained HTML">
+  <img src="https://img.shields.io/badge/License-MIT-111111?style=flat-square" alt="MIT license">
+</p>
 
-Scans your local Claude Code transcripts and generates a visual security report - secrets leaked in tool outputs, destructive commands executed, permission bypass patterns, SSH remote access, agent oversight gaps, and more.
+<p align="center">
+  <a href="#install">Install</a>
+  ·
+  <a href="https://vibenalytics.dev/vibeguard">Website</a>
+  ·
+  <a href="https://vibenalytics.dev/vibeguard/sample">Sample Report</a>
+  ·
+  <a href="#what-you-get">What You Get</a>
+  ·
+  <a href="#persona-card">Persona Card</a>
+  ·
+  <a href="#report-sections">Report Sections</a>
+  ·
+  <a href="#how-it-works">How It Works</a>
+</p>
 
-```
-npx cc-vibeguard
-```
+---
 
-Opens a self-contained HTML report in your browser. No data leaves your machine.
+Scans your local Claude Code transcripts and turns them into a visual security report: secret exposure in tool output, destructive command patterns, permission bypass habits, SSH activity, agent oversight gaps, and more.
 
-## What it analyzes
+Live product page: <https://vibenalytics.dev/vibeguard>  
+Sample report: <https://vibenalytics.dev/vibeguard/sample>
 
-**Secret exposure** - Detects API keys, tokens, database URLs, private keys, AWS credentials, Ethereum keys, and seed phrases that appeared in tool results. Distinguishes real credentials from placeholders, local dev URLs, and false positives.
+<p align="center">
+  <img src="assets/demo.gif" alt="cc-vibeguard demo" width="100%">
+</p>
 
-**Destructive commands** - Flags `rm -rf`, `DELETE FROM` without WHERE, `curl | sh`, force pushes, `sudo`, IAM escalation, terraform destroy, package publishing, and 30+ other risky patterns. Each finding is classified as critical/high/medium/low with context (local dev vs SSH remote).
-
-**Permission discipline** - Tracks how often you use bypass mode vs default mode, broken down by hour and day. Identifies which projects have the highest bypass rates.
-
-**SSH & remote access** - Enumerates hosts accessed, command types, and timeline of remote activity.
-
-**Autonomous agents** - Counts subagent spawns, how many ran in bypass mode, and which models were used.
-
-**Human overrides** - Measures denial rate, interrupts, and destructive command catches - how often you actually stopped the AI from doing something risky.
-
-**User sentiment** - Detects frustration and satisfaction patterns in your prompts.
-
-**Security score** - Weighted composite score (0-100) across five dimensions: secrets (30%), permissions (25%), remote access (20%), commands (15%), agent oversight (10%).
-
-**Persona** - Assigns a behavioral persona based on your patterns. 25+ personas ranging from "Fort Knox" and "Zero Trust Human" to "Permission Anarchist" and "YOLO Deployer".
-
-## Usage
+## Install
 
 ```bash
 npx cc-vibeguard
 ```
 
-That's it. Scans `~/.claude/projects`, writes a self-contained HTML report to `~/Downloads/cc-vibeguard-report.html`, and opens it in your browser.
+That is the full install and run flow. `cc-vibeguard` scans `~/.claude/projects`, writes a self-contained HTML report to `~/Downloads/cc-vibeguard-report.html`, and opens it in your browser.
 
-Requires Node.js 18+. Prebuilt binaries for macOS (ARM64, x64) and Linux (x64, ARM64).
+No data leaves your machine.
 
-## Report sections
+Requires Node.js 18+. Prebuilt binaries are available for macOS (ARM64, x64) and Linux (x64, ARM64).
+
+Want to see the output first? Browse the sample report: <https://vibenalytics.dev/vibeguard/sample>
+
+## What You Get
+
+| Area | What it surfaces |
+| --- | --- |
+| Secret exposure | API keys, tokens, private keys, seed phrases, database URLs, and other sensitive values found in tool results |
+| Destructive commands | Risky shell, SQL, git, cloud, infra, and package publishing actions with severity and context |
+| Permission discipline | How often bypass mode is used, when it happens, and which projects carry the most risk |
+| SSH and remote access | Hosts, command types, and a timeline of remote activity |
+| Autonomous agents | Subagent usage, models used, and how often agents ran with elevated permissions |
+| Human overrides | Denials, interrupts, and destructive command catches that prevented bad outcomes |
+| User sentiment | Frustration and satisfaction signals across prompts |
+| Security score | A weighted 0-100 score across secrets, permissions, remote access, commands, and agent oversight |
+| Persona | A behavioral archetype based on your operating patterns, from highly disciplined to more adventurous |
+
+## Why Teams Use It
+
+- Spot real security drift in day-to-day AI-assisted development.
+- See risky patterns across projects, not just one session at a time.
+- Share a report that is readable by engineers, leads, and security-minded operators.
+- Keep analysis fully local with no telemetry and no external uploads.
+
+## Persona Card
+
+<table>
+  <tr>
+    <td width="58%" valign="middle">
+      <p>Every report ends with a downloadable persona card that brings together your archetype and key security signals in one polished, shareable snapshot.</p>
+      <p>Celebrate strong habits, spot where your workflow could tighten up, and compare approaches across your team in a way that feels useful, lightweight, and a little fun.</p>
+    </td>
+    <td width="42%" valign="middle">
+      <img src="assets/persona-card.png" alt="Persona card" width="100%">
+    </td>
+  </tr>
+</table>
+
+## Report Sections
 
 | Section | What it shows |
-|---------|--------------|
-| Hero | Transcript count, project count, date range, total prompts |
+| --- | --- |
+| Hero | Transcript count, project count, date range, and total prompts |
 | Persona | Behavioral archetype with key stats |
-| Scores | Overall + per-dimension security scores with weights |
-| Secret exposure | Secret types, most exposed keys, exposure by project |
-| Destructive commands | Severity distribution, categories, critical findings, git safety |
-| Permission discipline | Bypass %, mode distribution by hour/day, riskiest projects |
-| SSH & remote access | Hosts, command count, daily timeline |
-| Autonomous agents | Spawn count, bypass mode agents, models used |
-| Human overrides | Denials, interrupts, destructive catches, most rejected tools |
-| User sentiment | Negative/positive rates, top keywords, per-project breakdown |
-| Prioritized risks | Actionable risk items + what's working well |
+| Scores | Overall security score plus per-dimension breakdown |
+| Secret exposure | Secret types, most exposed keys, and exposure by project |
+| Destructive commands | Severity distribution, categories, critical findings, and git safety |
+| Permission discipline | Bypass rate, mode distribution by hour and day, and riskiest projects |
+| SSH and remote access | Hosts, command count, and daily timeline |
+| Autonomous agents | Spawn count, bypass-mode agents, and models used |
+| Human overrides | Denials, interrupts, destructive catches, and most rejected tools |
+| User sentiment | Negative and positive rates, top keywords, and per-project breakdown |
+| Prioritized risks | Actionable risk items plus what is already working well |
 
-## How it works
+## How It Works
 
-1. Discovers all `.jsonl` transcript files in `~/.claude/projects/`
-2. Parses each session: user prompts, tool calls, tool results, assistant responses
-3. Runs security analysis across all parsed sessions
-4. Generates a self-contained HTML dashboard with the data embedded
-5. Opens the report in your browser
+1. Discover all `.jsonl` transcript files in `~/.claude/projects/`
+2. Parse each session: user prompts, tool calls, tool results, and assistant responses
+3. Run security analysis across all parsed sessions
+4. Generate a self-contained HTML dashboard with the data embedded
+5. Open the report in your browser
 
 All analysis runs locally. No network requests. No telemetry.
 
-## Built with
+## Built With
 
-Rust CLI + prebuilt binaries distributed via npm optional dependencies.
+Rust CLI with prebuilt binaries distributed via npm optional dependencies.
 
 ## License
 

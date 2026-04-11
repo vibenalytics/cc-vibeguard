@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/vibenalytics/cc-vibeguard"
   },
-  "homepage": "https://vibenalytics.dev/cc-vibeguard",
+  "homepage": "https://vibenalytics.dev/vibeguard",
   "keywords": ["claude-code", "security", "analytics", "cli", "vibeguard"],
   "bin": {
     "cc-vibeguard": "bin/run.js"
